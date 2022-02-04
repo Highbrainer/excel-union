@@ -62,6 +62,7 @@ namespace ExcelUnion
         public Content Content(string sheetname, int keyColumn, List<Column> chosenColumns, ProgressBar progress)
         {
             Content ret = new Content();
+            ret.Sheet = sheetname;
 
             Excel.Application xlApp;
             Excel.Workbook xlWorkBook;
@@ -100,10 +101,19 @@ namespace ExcelUnion
             for (rCnt = 1; rCnt <= rw; rCnt++)
             {
                 List<object> row = rCnt == 1 ? ret.Titles : new List<object>();
-                string key = (range.Cells[rCnt, keyColumn + 1] as Excel.Range).Value2;
+                string key = null;
+                dynamic val = "!!!ERREUR!!!";
+                try
+                {
+                    val = (range.Cells[rCnt, keyColumn + 1] as Excel.Range).Value2;
+                    key = val/*.ToString()*/;
+                }catch(Exception ex)
+                {
+                    MessageBox.Show("Dans l'onglet \"" + sheetname + "\" du fichier\n" + fileA + "\nle champ clef (colonne " + (keyColumn + 1) + ") de la ligne " + rCnt + " ne semble pas au bon format : '" + val + "'");
+                }
                 //TEMP
-                string c = (range.Cells[rCnt, 3] as Excel.Range).Value2;
-                if (string.IsNullOrWhiteSpace(c))
+                //string c = (range.Cells[rCnt, 3] as Excel.Range).Value2;
+                if (string.IsNullOrWhiteSpace(key))
                 {
                     Console.WriteLine("Skipping line " + rCnt + " : " + key);
                     continue;
@@ -180,7 +190,15 @@ namespace ExcelUnion
                 progressBarA.Value += 1;
             }
 
-            int nbCols1 = contents1.Lines.Values.First().Count;
+            int nbCols1 = 0;
+            if (contents1.Lines.Values.Count > 0)
+            {
+                nbCols1 = contents1.Lines.Values.First().Count;
+            } else
+            {
+                MessageBox.Show("L'onglet semble vide ! " + contents1.Sheet, "Erreur !", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+                return;
+            }
 
             foreach (string key in contents2.Lines.Keys)
             {
